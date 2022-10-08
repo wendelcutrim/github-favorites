@@ -1,5 +1,5 @@
 console.log("Start JS");
 
-import { FavoritesViews, GithubUser } from "./Favorites.js";
+import { FavoritesViews } from "./Favorites.js";
 
 new FavoritesViews("#app");
