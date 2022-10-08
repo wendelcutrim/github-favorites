@@ -1,3 +1,5 @@
+import { GithubUser } from './GithubUser.js';
+
 //Classe que vai conter a logica dos dados
 //Como os dados serão estruturados
 export class Favorites {
@@ -28,11 +30,41 @@ export class Favorites {
         ] */
     }
 
+    save() {
+        localStorage.setItem('@github-favorites:', JSON.stringify(this.users));
+    }
+
     delete(user) {
-        const filteredUsers = this.users.filter(user => user.login !== user.login);
+        const filteredUsers = this.users.filter(u => u.login !== user.login);
 
         this.users = filteredUsers;
         this.update();
+        this.save();
+    }
+
+    async add(username) {
+        
+        try {
+            const verifyUserExists = this.users.find(user => user.login === username);
+
+            if(verifyUserExists) {
+                throw new Error(`O usuário ${username} já está nos favoritos!`);
+            }
+
+            const user = await GithubUser.search(username);
+
+            if(typeof user.login === 'undefined') {
+                throw new Error('Usuário não encontrado')
+            };
+
+            this.users = [user, ...this.users];
+            this.update();
+            this.save();
+
+            console.log(user)
+        } catch (err) {
+            alert(err);
+        }
     }
 }
 
@@ -42,6 +74,23 @@ export class FavoritesViews extends Favorites {
         super(root);
 
         this.update();
+        this.onAdd();
+    }
+
+    onAdd() {
+        const addButton = this.root.querySelector('.search button');
+        const inputSearch = this.root.querySelector('.search input');
+
+        addButton.onclick = () => {
+            const { value } = this.root.querySelector('.search input');
+
+            this.add(value);
+            this.clearInput();
+        }
+
+        inputSearch.addEventListener('keypress', (event) => {
+            event.key === 'Enter' && this.add(event.target.value) && this.clearInput();
+        })
     }
 
     update() {
@@ -54,6 +103,7 @@ export class FavoritesViews extends Favorites {
             row.querySelector('.user img').alt = user.name + " image";
             row.querySelector('.user p').textContent = user.name;
             row.querySelector('.user a').setAttribute('href', `https://github.com/${user.login}`);
+            row.querySelector('.user span').innerText = user.login;
             row.querySelector('.repositories').innerText = user.public_repos;
             row.querySelector('.followers').innerText = user.followers;
 
@@ -99,5 +149,11 @@ export class FavoritesViews extends Favorites {
         this.tbody.querySelectorAll("tr").forEach(row => {
             row.remove()
         })
+    }
+
+    clearInput() {
+        const inputSearch = this.root.querySelector(".search input");
+        inputSearch.value = "";
+        return;
     }
 }
